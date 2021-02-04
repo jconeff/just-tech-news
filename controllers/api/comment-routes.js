@@ -1,17 +1,26 @@
 const router = require('express').Router();
 const { Comment } = require('../../models');
+const withAuth = require('../../utils/auth')
 
 router.get('/', (req, res) => {
-    Comment.findAll({})
-        .then(dbCommentData => res.json(dbCommentData))
+    Comment.findAll({
+        attributes: [
+            'id',
+            'comment_text',
+            'user_id',
+            'post_id',
+            'created_at'
+        ],
+        order: [['created_at', 'DESC']]
+    })
+        .then(dbPostData => res.json(dbPostData))
         .catch(err => {
             console.log(err);
-            res.status(400).json(err)
+            res.status(500).json(err);
         });
 });
 
-router.post('/', (req, res) => {
-    // Check the session
+router.post('/', withAuth, (req, res) => {
     if (req.session) {
         Comment.create({
             comment_text: req.body.comment_text,
@@ -22,30 +31,27 @@ router.post('/', (req, res) => {
             .then(dbCommentData => res.json(dbCommentData))
             .catch(err => {
                 console.log(err);
-                res.status(400).json(err)
+                res.status(400).json(err);
             });
-    }
+    };
 });
 
-router.delete('/:id', (req, res) => {
-    Comment.destroy(
-        {
-            where: {
-                id: req.params.id
-            }
+router.delete('/:id', withAuth, (req, res) => {
+    Comment.destroy({
+        where: {
+            id: req.params.id
         }
-    )
-        .then(dbCommentData => {
-            if (!dbCommentData) {
-                res.status(400).json({ message: 'No user found at this id' });
+    })
+        .then(dbPostData => {
+            if(!dbPostData) {
+                res.status(404).json({ message: 'No post found with this id' });
                 return;
-            }
-
-            res.json(dbCommentData)
+            };
+            res.json(dbPostData);
         })
         .catch(err => {
             console.log(err);
-            res.status(500).json(err)
+            res.status(500).json(err);
         });
 });
 
